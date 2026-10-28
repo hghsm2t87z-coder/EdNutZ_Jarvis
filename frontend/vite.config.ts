@@ -12,8 +12,10 @@ import { VitePWA } from 'vite-plugin-pwa';
 const apiTarget = process.env.OPENJARVIS_VITE_PROXY_TARGET
   || process.env.VITE_API_URL
   || 'http://localhost:8000';
+const basePath = process.env.VITE_BASE_PATH || '/';
 
 export default defineConfig({
+  base: basePath,
   resolve: {
     alias: {
       '@': path.resolve(import.meta.dirname, './src'),
