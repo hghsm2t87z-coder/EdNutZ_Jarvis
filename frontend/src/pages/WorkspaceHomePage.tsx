@@ -1,16 +1,17 @@
 import {
   ArrowRight, BookOpen, Brain, BriefcaseBusiness, Building2, CheckCircle2,
-  ClipboardList, DollarSign, Forklift, GraduationCap, Heart, Lightbulb,
+  ClipboardList, DollarSign, Dumbbell, Forklift, GraduationCap, Heart, Lightbulb,
   PackageCheck, Rocket, Search, Target, Truck, UserRound, Warehouse,
 } from 'lucide-react';
 import { useNavigate } from 'react-router';
 import { useAppStore } from '../lib/store';
 import { WORKSPACES, type WorkspaceId } from '../lib/workspaces';
 
-type SectionCard = { title: string; description: string; icon: typeof Brain };
+type SectionCard = { title: string; description: string; icon: typeof Brain; route?: string };
 
 const sectionCards: Record<WorkspaceId, SectionCard[]> = {
   personal: [
+    { title: 'Gym Program', description: 'Your 5-day bodybuilding split with sets, reps, cues, and demo videos.', icon: Dumbbell, route: '/gym' },
     { title: 'Brain Dump', description: 'Capture thoughts fast before they disappear.', icon: Brain },
     { title: 'Ideas', description: 'Collect and develop creative ideas.', icon: Lightbulb },
     { title: 'Goals', description: 'Turn long-term goals into next actions.', icon: Target },
@@ -93,7 +94,7 @@ export function WorkspaceHomePage() {
           {cards.map((card) => {
             const Icon = card.icon;
             return (
-              <button key={card.title} onClick={() => startChat(`Help me work on ${card.title} inside my ${workspace.name} workspace.`)} className="min-h-28 rounded-xl p-4 text-left active:scale-[0.99]" style={{ background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)' }}>
+              <button key={card.title} onClick={() => card.route ? navigate(card.route) : startChat(`Help me work on ${card.title} inside my ${workspace.name} workspace.`)} className="min-h-28 rounded-xl p-4 text-left active:scale-[0.99]" style={{ background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)' }}>
                 <div className="flex items-center gap-3">
                   <div className="flex h-9 w-9 items-center justify-center rounded-lg" style={{ background: 'var(--color-accent-subtle)', color: 'var(--color-accent)' }}><Icon size={18} /></div>
                   <div className="text-sm font-semibold" style={{ color: 'var(--color-text)' }}>{card.title}</div>
