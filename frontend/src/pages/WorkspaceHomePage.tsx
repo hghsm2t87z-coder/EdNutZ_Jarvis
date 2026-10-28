@@ -1,16 +1,17 @@
 import {
   ArrowRight, BookOpen, Brain, BriefcaseBusiness, Building2, CheckCircle2,
-  ClipboardList, DollarSign, Forklift, GraduationCap, Heart, Lightbulb,
+  ClipboardList, DollarSign, Dumbbell, Forklift, GraduationCap, Heart, Lightbulb,
   PackageCheck, Rocket, Search, Target, Truck, UserRound, Warehouse,
 } from 'lucide-react';
 import { useNavigate } from 'react-router';
 import { useAppStore } from '../lib/store';
 import { WORKSPACES, type WorkspaceId } from '../lib/workspaces';
 
-type SectionCard = { title: string; description: string; icon: typeof Brain };
+type SectionCard = { title: string; description: string; icon: typeof Brain; route?: string };
 
 const sectionCards: Record<WorkspaceId, SectionCard[]> = {
   personal: [
+    { title: 'Gym Program', description: 'Your 5-day bodybuilding split with sets, reps, cues, and demo videos.', icon: Dumbbell, route: '/gym' },
     { title: 'Brain Dump', description: 'Capture thoughts fast before they disappear.', icon: Brain },
     { title: 'Ideas', description: 'Collect and develop creative ideas.', icon: Lightbulb },
     { title: 'Goals', description: 'Turn long-term goals into next actions.', icon: Target },
@@ -65,42 +66,24 @@ export function WorkspaceHomePage() {
         <header className="mb-5 rounded-2xl p-5 sm:p-6" style={{ background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)' }}>
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <div className="mb-2 inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold" style={{ background: 'var(--color-accent-subtle)', color: 'var(--color-accent)' }}>
-                <WorkspaceIcon size={14} /> {workspace.name}
-              </div>
+              <div className="mb-2 inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold" style={{ background: 'var(--color-accent-subtle)', color: 'var(--color-accent)' }}><WorkspaceIcon size={14} /> {workspace.name}</div>
               <h1 className="text-2xl font-semibold" style={{ color: 'var(--color-text)' }}>{workspace.name}</h1>
               <p className="mt-1 max-w-xl text-sm" style={{ color: 'var(--color-text-secondary)' }}>{workspace.shortDescription}</p>
             </div>
-            <button onClick={() => startChat()} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium" style={{ background: 'var(--color-accent)', color: 'var(--color-on-accent)' }}>
-              New chat <ArrowRight size={16} />
-            </button>
+            <button onClick={() => startChat()} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium" style={{ background: 'var(--color-accent)', color: 'var(--color-on-accent)' }}>New chat <ArrowRight size={16} /></button>
           </div>
         </header>
 
         <div className="mb-5 grid grid-cols-2 gap-3">
-          <button onClick={() => navigate('/records')} className="rounded-xl p-4 text-left" style={{ background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)' }}>
-            <div className="text-lg font-semibold" style={{ color: 'var(--color-text)' }}>Records</div>
-            <div className="mt-1 text-xs" style={{ color: 'var(--color-text-secondary)' }}>Search, add, edit, and track items</div>
-          </button>
-          <button onClick={() => navigate('/chat')} className="rounded-xl p-4 text-left" style={{ background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)' }}>
-            <div className="text-lg font-semibold" style={{ color: 'var(--color-text)' }}>{conversations.length}</div>
-            <div className="mt-1 text-xs" style={{ color: 'var(--color-text-secondary)' }}>Chats in this workspace</div>
-          </button>
+          <button onClick={() => navigate('/records')} className="rounded-xl p-4 text-left" style={{ background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)' }}><div className="text-lg font-semibold" style={{ color: 'var(--color-text)' }}>Records</div><div className="mt-1 text-xs" style={{ color: 'var(--color-text-secondary)' }}>Search, add, edit, and track items</div></button>
+          <button onClick={() => navigate('/chat')} className="rounded-xl p-4 text-left" style={{ background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)' }}><div className="text-lg font-semibold" style={{ color: 'var(--color-text)' }}>{conversations.length}</div><div className="mt-1 text-xs" style={{ color: 'var(--color-text-secondary)' }}>Chats in this workspace</div></button>
         </div>
 
         <h2 className="mb-3 text-sm font-semibold" style={{ color: 'var(--color-text)' }}>Quick start</h2>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {cards.map((card) => {
             const Icon = card.icon;
-            return (
-              <button key={card.title} onClick={() => startChat(`Help me work on ${card.title} inside my ${workspace.name} workspace.`)} className="min-h-28 rounded-xl p-4 text-left active:scale-[0.99]" style={{ background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)' }}>
-                <div className="flex items-center gap-3">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-lg" style={{ background: 'var(--color-accent-subtle)', color: 'var(--color-accent)' }}><Icon size={18} /></div>
-                  <div className="text-sm font-semibold" style={{ color: 'var(--color-text)' }}>{card.title}</div>
-                </div>
-                <div className="mt-3 text-xs leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>{card.description}</div>
-              </button>
-            );
+            return <button key={card.title} onClick={() => card.route ? navigate(card.route) : startChat(`Help me work on ${card.title} inside my ${workspace.name} workspace.`)} className="min-h-28 rounded-xl p-4 text-left active:scale-[0.99]" style={{ background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)' }}><div className="flex items-center gap-3"><div className="flex h-9 w-9 items-center justify-center rounded-lg" style={{ background: 'var(--color-accent-subtle)', color: 'var(--color-accent)' }}><Icon size={18} /></div><div className="text-sm font-semibold" style={{ color: 'var(--color-text)' }}>{card.title}</div></div><div className="mt-3 text-xs leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>{card.description}</div></button>;
           })}
         </div>
       </div>
