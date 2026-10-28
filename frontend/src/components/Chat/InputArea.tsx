@@ -6,6 +6,7 @@ import { streamChat, streamResearch } from '../../lib/sse';
 import { fetchSavings, getBase } from '../../lib/api';
 import { listConnectors, getSyncStatus } from '../../lib/connectors-api';
 import { serializeToolCallArguments } from '../../lib/tool-call';
+import { getWorkspaceContext, prefixPromptWithWorkspaceContext } from '../../lib/workspace-context';
 import {
   engineFromCompletionChunk,
   resolveChatEngine,
@@ -86,6 +87,7 @@ export function InputArea() {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const activeId = useAppStore((s) => s.activeId);
+  const activeWorkspace = useAppStore((s) => s.activeWorkspace);
   const selectedModel = useAppStore((s) => s.selectedModel);
   const streamState = useAppStore((s) => s.streamState);
   const messages = useAppStore((s) => s.messages);
@@ -196,10 +198,17 @@ export function InputArea() {
 
     // Build API messages before adding assistant placeholder
     const currentMessages = useAppStore.getState().messages;
-    const apiMessages = currentMessages.map((m) => ({
-      role: m.role,
-      content: m.content,
-    }));
+    const workspaceContext = getWorkspaceContext(activeWorkspace);
+    const apiMessages = [
+      {
+        role: 'system',
+        content: workspaceContext.systemContext,
+      },
+      ...currentMessages.map((m) => ({
+        role: m.role,
+        content: m.content,
+      })),
+    ];
 
     const assistantMsg: ChatMessage = {
       id: generateId(),
@@ -252,7 +261,7 @@ export function InputArea() {
     try {
       if (deepResearch) {
         for await (const ev of streamResearch(
-          content,
+          prefixPromptWithWorkspaceContext(content, activeWorkspace),
           selectedModel,
           controller.signal,
         )) {
@@ -542,6 +551,7 @@ export function InputArea() {
   }, [
     input,
     activeId,
+    activeWorkspace,
     selectedModel,
     streamState.isStreaming,
     createConversation,
