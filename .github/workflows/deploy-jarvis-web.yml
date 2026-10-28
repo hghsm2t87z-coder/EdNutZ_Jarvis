@@ -35,7 +35,7 @@ jobs:
           VITE_BASE_PATH: /EdNutZ_Jarvis/
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: frontend/dist
+          path: src/openjarvis/server/static
 
   deploy:
     environment:
