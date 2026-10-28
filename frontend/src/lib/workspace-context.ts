@@ -19,7 +19,7 @@ const SYSTEM_CONTEXT: Record<WorkspaceId, string> = {
   work: 'Treat this as Eddy’s Work workspace for warehouse/logistics operations. Prioritize fast, mobile-friendly operational help. Keep employer/work data separate from Personal and Business unless Eddy explicitly asks to transfer an item.',
 };
 
-export function getWorkspaceContext(workspaceId: WorkspaceId = getActiveWorkspace()): WorkspaceContext {
+export function getWorkspaceContext(workspaceId: WorkspaceId = getStoredWorkspace()): WorkspaceContext {
   const workspace = WORKSPACES.find((item) => item.id === workspaceId)!;
   return {
     workspaceId,
