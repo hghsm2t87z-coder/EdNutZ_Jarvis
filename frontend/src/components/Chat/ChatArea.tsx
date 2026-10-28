@@ -8,6 +8,7 @@ import { shouldAutoplayFinishedReply, useTtsStore } from '../../lib/tts';
 import { stripThinkTags } from '../../lib/message-text';
 import { Sparkles, PanelRightOpen, PanelRightClose, Database, MessageSquare, X } from 'lucide-react';
 import { listConnectors } from '../../lib/connectors-api';
+import { WORKSPACES } from '../../lib/workspaces';
 
 function getGreeting(): string {
   const hour = new Date().getHours();
@@ -18,6 +19,8 @@ function getGreeting(): string {
 
 export function ChatArea() {
   const activeId = useAppStore((s) => s.activeId);
+  const activeWorkspace = useAppStore((s) => s.activeWorkspace);
+  const workspace = WORKSPACES.find((item) => item.id === activeWorkspace)!;
   const messages = useAppStore((s) => s.messages);
   const streamState = useAppStore((s) => s.streamState);
   const systemPanelOpen = useAppStore((s) => s.systemPanelOpen);
@@ -188,11 +191,21 @@ export function ChatArea() {
             >
               <Sparkles size={24} />
             </div>
+            <div
+              className="mb-2 rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em]"
+              style={{
+                background: 'var(--color-accent-subtle)',
+                color: 'var(--color-accent)',
+                border: '1px solid var(--color-border)',
+              }}
+            >
+              {workspace.name}
+            </div>
             <h2 className="text-xl font-semibold mb-2" style={{ color: 'var(--color-text)' }}>
-              {getGreeting()}
+              {getGreeting()}, Eddy
             </h2>
             <p className="text-sm text-center max-w-sm mb-6" style={{ color: 'var(--color-text-secondary)' }}>
-              Ask anything. Your AI runs locally — private, fast, and always available.
+              {workspace.shortDescription}
             </p>
 
             {/* Quick action hints */}

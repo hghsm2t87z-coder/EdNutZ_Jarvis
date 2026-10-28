@@ -17,6 +17,8 @@ import type {
 import type { ManagedAgent } from './api';
 import { isEmbedOnlyModel } from './model-capabilities';
 import { serializeToolCallArguments } from './tool-call';
+import { getStoredWorkspace, storeWorkspace, type WorkspaceId } from './workspaces';
+import { loadWorkspaceConversations, saveWorkspaceConversations } from './workspace-conversations';
 
 export interface CachedConnector {
   connector_id: string;
@@ -34,7 +36,6 @@ export interface AgentEvent {
 
 // ── localStorage persistence ──────────────────────────────────────────
 
-const CONVERSATIONS_KEY = 'openjarvis-conversations';
 const SETTINGS_KEY = 'openjarvis-settings';
 const OPTIN_KEY = 'openjarvis-optin';
 const OPTIN_NAME_KEY = 'openjarvis-display-name';
@@ -52,43 +53,38 @@ function generateId(): string {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 }
 
-function loadConversations(): ConversationStore {
-  try {
-    const raw = localStorage.getItem(CONVERSATIONS_KEY);
-    if (!raw) return { version: 1, conversations: {}, activeId: null };
-    const parsed = JSON.parse(raw);
-    if (parsed.version === 1) {
-      let repaired = false;
-      for (const conversation of Object.values(parsed.conversations ?? {}) as Conversation[]) {
-        for (const message of conversation.messages ?? []) {
-          for (const toolCall of message.toolCalls ?? []) {
-            const argumentsText = serializeToolCallArguments(toolCall.arguments);
-            if (argumentsText !== toolCall.arguments) {
-              toolCall.arguments = argumentsText;
-              repaired = true;
-            }
-          }
+function loadConversations(workspaceId: WorkspaceId = getStoredWorkspace()): ConversationStore {
+  const parsed = loadWorkspaceConversations(workspaceId);
+  let repaired = false;
+
+  for (const conversation of Object.values(parsed.conversations ?? {}) as Conversation[]) {
+    for (const message of conversation.messages ?? []) {
+      for (const toolCall of message.toolCalls ?? []) {
+        const argumentsText = serializeToolCallArguments(toolCall.arguments);
+        if (argumentsText !== toolCall.arguments) {
+          toolCall.arguments = argumentsText;
+          repaired = true;
         }
       }
-      if (repaired) {
-        try {
-          localStorage.setItem(CONVERSATIONS_KEY, JSON.stringify(parsed));
-        } catch {
-          // Keep the repaired conversations usable in memory when storage is
-          // read-only or full. A failed best-effort writeback must not make
-          // otherwise readable conversation history disappear from the UI.
-        }
-      }
-      return parsed;
     }
-    return { version: 1, conversations: {}, activeId: null };
-  } catch {
-    return { version: 1, conversations: {}, activeId: null };
   }
+
+  if (repaired) {
+    try {
+      saveWorkspaceConversations(workspaceId, parsed);
+    } catch {
+      // Keep repaired conversations usable in memory when storage is unavailable.
+    }
+  }
+
+  return parsed;
 }
 
-function saveConversations(store: ConversationStore): void {
-  localStorage.setItem(CONVERSATIONS_KEY, JSON.stringify(store));
+function saveConversations(
+  store: ConversationStore,
+  workspaceId: WorkspaceId = getStoredWorkspace(),
+): void {
+  saveWorkspaceConversations(workspaceId, store);
 }
 
 export type ThemeMode = 'light' | 'dark' | 'system';
@@ -149,6 +145,10 @@ const INITIAL_STREAM: StreamState = {
 };
 
 interface AppState {
+  // Workspace
+  activeWorkspace: WorkspaceId;
+  switchWorkspace: (workspaceId: WorkspaceId) => void;
+
   // Conversations
   conversations: Conversation[];
   activeId: string | null;
@@ -266,12 +266,35 @@ interface AppState {
 }
 
 export const useAppStore = create<AppState>((set, get) => {
-  const initial = loadConversations();
+  const initialWorkspace = getStoredWorkspace();
+  const initial = loadConversations(initialWorkspace);
   const convList = Object.values(initial.conversations).sort(
     (a, b) => b.updatedAt - a.updatedAt,
   );
 
   return {
+    activeWorkspace: initialWorkspace,
+    switchWorkspace: (workspaceId: WorkspaceId) => {
+      if (workspaceId === get().activeWorkspace) return;
+      if (get().streamState.isStreaming) return;
+
+      storeWorkspace(workspaceId);
+      const workspaceStore = loadConversations(workspaceId);
+      const activeConversation = workspaceStore.activeId
+        ? workspaceStore.conversations[workspaceStore.activeId]
+        : null;
+
+      set({
+        activeWorkspace: workspaceId,
+        conversations: Object.values(workspaceStore.conversations).sort(
+          (a, b) => b.updatedAt - a.updatedAt,
+        ),
+        activeId: workspaceStore.activeId,
+        messages: activeConversation ? activeConversation.messages : [],
+        streamState: INITIAL_STREAM,
+      });
+    },
+
     conversations: convList,
     activeId: initial.activeId,
     messages:
