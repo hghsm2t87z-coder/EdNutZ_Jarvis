@@ -3,6 +3,7 @@ import { Routes, Route } from 'react-router';
 import { Layout } from './components/Layout';
 import { ChatPage } from './pages/ChatPage';
 import { WorkspaceHomePage } from './pages/WorkspaceHomePage';
+import { WorkspaceRecordsPage } from './pages/WorkspaceRecordsPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { GetStartedPage } from './pages/GetStartedPage';
@@ -23,8 +24,6 @@ export default function App() {
   const [setupDone, setSetupDone] = useState(!isTauri());
   const handleSetupReady = useCallback(() => {
     setSetupDone(true);
-    // Only fire once per install — guard against setup screen re-appearing
-    // on reinstalls or dev reloads.
     if (!localStorage.getItem('oj-setup-completed')) {
       localStorage.setItem('oj-setup-completed', '1');
       track('setup_completed', { preset: 'default' });
@@ -47,9 +46,7 @@ export default function App() {
   const optInModalOpen = useAppStore((s) => s.optInModalOpen);
   const setOptInModalOpen = useAppStore((s) => s.setOptInModalOpen);
   const markOptInModalSeen = useAppStore((s) => s.markOptInModalSeen);
-  const savings = useAppStore((s) => s.savings);
 
-  // Apply theme class to <html>
   useEffect(() => {
     const root = document.documentElement;
     root.classList.remove('dark', 'light');
@@ -57,7 +54,6 @@ export default function App() {
     else if (settings.theme === 'light') root.classList.add('light');
   }, [settings.theme]);
 
-  // Sync overlay conversations into the main app
   const importOverlay = useAppStore((s) => s.importOverlayConversation);
   useEffect(() => {
     if (!isTauri()) return;
@@ -66,60 +62,37 @@ export default function App() {
     return () => clearInterval(interval);
   }, [importOverlay]);
 
-  // Fetch models on mount
   useEffect(() => {
-    fetchModels()
-      .then((m) => {
-        setModels(m);
-      })
-      .catch(() => setModels([]))
-      .finally(() => setModelsLoading(false));
+    fetchModels().then(setModels).catch(() => setModels([])).finally(() => setModelsLoading(false));
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Fetch server info
   useEffect(() => {
     fetchServerInfo().then(setServerInfo).catch(() => {});
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Poll savings and optionally share to Supabase
   useEffect(() => {
-    const refresh = () =>
-      fetchSavings()
-        .then((data) => {
-          setSavings(data);
-          if (optInEnabled && optInDisplayName && data) {
-            const claudeEntry = data.per_provider.find(
-              (p) => p.provider === 'claude-fable-5',
-            );
-            const dollarSavings = claudeEntry ? claudeEntry.total_cost : 0;
-            const energySaved = data.per_provider.reduce(
-              (sum, p) => sum + (p.energy_wh || 0),
-              0,
-            );
-            const flopsSaved = data.per_provider.reduce(
-              (sum, p) => sum + (p.flops || 0),
-              0,
-            );
-            submitSavings({
-              anon_id: optInAnonId,
-              display_name: optInDisplayName,
-              email: optInEmail,
-              total_calls: data.total_calls,
-              total_tokens: data.total_tokens,
-              dollar_savings: dollarSavings,
-              energy_wh_saved: energySaved,
-              flops_saved: flopsSaved,
-              token_counting_version: data.token_counting_version ?? 1,
-            });
-          }
-        })
-        .catch(() => {});
+    const refresh = () => fetchSavings().then((data) => {
+      setSavings(data);
+      if (optInEnabled && optInDisplayName && data) {
+        const claudeEntry = data.per_provider.find((p) => p.provider === 'claude-fable-5');
+        submitSavings({
+          anon_id: optInAnonId,
+          display_name: optInDisplayName,
+          email: optInEmail,
+          total_calls: data.total_calls,
+          total_tokens: data.total_tokens,
+          dollar_savings: claudeEntry ? claudeEntry.total_cost : 0,
+          energy_wh_saved: data.per_provider.reduce((sum, p) => sum + (p.energy_wh || 0), 0),
+          flops_saved: data.per_provider.reduce((sum, p) => sum + (p.flops || 0), 0),
+          token_counting_version: data.token_counting_version ?? 1,
+        });
+      }
+    }).catch(() => {});
     refresh();
     const interval = setInterval(refresh, 30000);
     return () => clearInterval(interval);
   }, [optInEnabled, optInDisplayName, optInEmail, optInAnonId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Wait for desktop setup before fetching identity or marking the dialog seen.
   useEffect(() => offerAnalyticsChoice({
     ready: setupDone,
     sharingModalSeen: optInModalSeen,
@@ -127,39 +100,23 @@ export default function App() {
     markSharingModalSeen: markOptInModalSeen,
   }), [setupDone, optInModalSeen, setOptInModalOpen, markOptInModalSeen]);
 
-  // Fire model_changed when the user switches models. First mount is
-  // not a "change" — only emit when both prev and current are real and
-  // differ.
   useEffect(() => {
     const prev = prevModelRef.current;
     const curr = selectedModel || '';
     prevModelRef.current = curr;
     if (!prev || !curr || prev === curr) return;
     void (async () => {
-      const [fromHash, toHash] = await Promise.all([
-        hashId(prev),
-        hashId(curr),
-      ]);
-      track('model_changed', {
-        from_model_hash: fromHash,
-        to_model_hash: toHash,
-      });
+      const [fromHash, toHash] = await Promise.all([hashId(prev), hashId(curr)]);
+      track('model_changed', { from_model_hash: fromHash, to_model_hash: toHash });
     })();
   }, [selectedModel]);
 
-  // app_opened — one-shot per app launch, fires after analytics has had
-  // a chance to initialize. platform + version are super-properties
-  // registered in analytics.ts initAnalytics, so no per-call props needed.
   useEffect(() => {
-    const t = setTimeout(() => {
-      track('app_opened', {});
-    }, 500);
+    const t = setTimeout(() => track('app_opened', {}), 500);
     return () => clearTimeout(t);
   }, []);
 
   const toggleSystemPanel = useAppStore((s) => s.toggleSystemPanel);
-
-  // Global keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
@@ -175,18 +132,17 @@ export default function App() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [commandPaletteOpen, setCommandPaletteOpen, toggleSystemPanel]);
 
-
-  if (!setupDone) {
-    return <SetupScreen onReady={handleSetupReady} />;
-  }
+  if (!setupDone) return <SetupScreen onReady={handleSetupReady} />;
 
   return (
     <>
       <UpdateChecker />
       <Routes>
         <Route element={<Layout />}>
-          <Route index element={<ChatPage />} />
+          <Route index element={<WorkspaceHomePage />} />
+          <Route path="chat" element={<ChatPage />} />
           <Route path="workspace" element={<WorkspaceHomePage />} />
+          <Route path="records" element={<WorkspaceRecordsPage />} />
           <Route path="dashboard" element={<DashboardPage />} />
           <Route path="settings" element={<SettingsPage />} />
           <Route path="get-started" element={<GetStartedPage />} />
@@ -197,9 +153,7 @@ export default function App() {
       </Routes>
       <Toaster position="bottom-right" />
       {commandPaletteOpen && <CommandPalette />}
-      {optInModalOpen && (
-        <OptInModal onClose={() => setOptInModalOpen(false)} />
-      )}
+      {optInModalOpen && <OptInModal onClose={() => setOptInModalOpen(false)} />}
     </>
   );
 }
