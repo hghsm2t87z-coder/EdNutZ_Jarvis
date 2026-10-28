@@ -17,6 +17,7 @@ import {
   Loader2,
   ScrollText,
   Database,
+  House,
 } from 'lucide-react';
 import { ConversationList } from './ConversationList';
 import { WorkspaceSwitcher } from '../WorkspaceSwitcher';
@@ -53,6 +54,7 @@ export function Sidebar() {
   };
 
   const navItems = [
+    { path: '/workspace', icon: House, label: 'Workspace Home' },
     { path: '/', icon: MessageSquare, label: 'Chat' },
     { path: '/dashboard', icon: BarChart3, label: 'Dashboard' },
     { path: '/data-sources', icon: Database, label: 'Data Sources' },
