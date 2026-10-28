@@ -1,4 +1,4 @@
-import { getActiveWorkspace, type WorkspaceId, WORKSPACES } from './workspaces';
+import { getStoredWorkspace, type WorkspaceId, WORKSPACES } from './workspaces';
 
 export interface WorkspaceContext {
   workspaceId: WorkspaceId;
@@ -23,7 +23,7 @@ export function getWorkspaceContext(workspaceId: WorkspaceId = getActiveWorkspac
   const workspace = WORKSPACES.find((item) => item.id === workspaceId)!;
   return {
     workspaceId,
-    label: workspace.label,
+    label: workspace.name,
     purpose: PURPOSES[workspaceId],
     systemContext: SYSTEM_CONTEXT[workspaceId],
   };
