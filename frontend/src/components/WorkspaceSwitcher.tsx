@@ -1,11 +1,6 @@
 import { BriefcaseBusiness, Building2, UserRound } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import {
-  getStoredWorkspace,
-  storeWorkspace,
-  WORKSPACES,
-  type WorkspaceId,
-} from '../lib/workspaces';
+import { WORKSPACES, type WorkspaceId } from '../lib/workspaces';
+import { useAppStore } from '../lib/store';
 
 const icons = {
   personal: UserRound,
@@ -14,26 +9,21 @@ const icons = {
 };
 
 export function WorkspaceSwitcher() {
-  const [active, setActive] = useState<WorkspaceId>(getStoredWorkspace);
-
-  useEffect(() => {
-    const onWorkspaceChange = (event: Event) => {
-      const workspace = (event as CustomEvent<WorkspaceId>).detail;
-      if (workspace) setActive(workspace);
-    };
-    window.addEventListener('eddy-workspace-change', onWorkspaceChange);
-    return () => window.removeEventListener('eddy-workspace-change', onWorkspaceChange);
-  }, []);
+  const active = useAppStore((s) => s.activeWorkspace);
+  const switchWorkspace = useAppStore((s) => s.switchWorkspace);
+  const isStreaming = useAppStore((s) => s.streamState.isStreaming);
 
   const selectWorkspace = (workspace: WorkspaceId) => {
-    storeWorkspace(workspace);
-    setActive(workspace);
-    window.dispatchEvent(new CustomEvent('eddy-workspace-change', { detail: workspace }));
+    if (workspace === active || isStreaming) return;
+    switchWorkspace(workspace);
   };
 
   return (
     <div className="px-3 pb-3">
-      <div className="mb-2 px-1 text-[10px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--color-text-tertiary)' }}>
+      <div
+        className="mb-2 px-1 text-[10px] font-semibold uppercase tracking-[0.18em]"
+        style={{ color: 'var(--color-text-tertiary)' }}
+      >
         Workspace
       </div>
       <div className="grid grid-cols-3 gap-1.5">
@@ -44,13 +34,18 @@ export function WorkspaceSwitcher() {
             <button
               key={workspace.id}
               onClick={() => selectWorkspace(workspace.id)}
-              className="flex min-w-0 flex-col items-center gap-1 rounded-lg px-1 py-2 text-[10px] transition-colors"
+              disabled={isStreaming && !selected}
+              className="flex min-w-0 flex-col items-center gap-1 rounded-lg px-1 py-2 text-[10px] transition-colors disabled:cursor-not-allowed disabled:opacity-50"
               style={{
                 background: selected ? 'var(--color-accent-subtle)' : 'var(--color-bg-secondary)',
                 border: `1px solid ${selected ? 'var(--color-accent)' : 'var(--color-border)'}`,
                 color: selected ? 'var(--color-text)' : 'var(--color-text-secondary)',
               }}
-              title={workspace.shortDescription}
+              title={
+                isStreaming && !selected
+                  ? 'Finish the current response before switching workspaces.'
+                  : workspace.shortDescription
+              }
             >
               <Icon size={15} style={selected ? { color: 'var(--color-accent)' } : undefined} />
               <span className="truncate w-full text-center">{workspace.name}</span>
