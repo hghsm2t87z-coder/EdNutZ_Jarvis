@@ -81,7 +81,11 @@ function useResearchCorpusSync(enabled: boolean): {
 }
 
 export function InputArea() {
-  const [input, setInput] = useState('');
+  const [input, setInput] = useState(() => {
+    const draft = sessionStorage.getItem('eddy-jarvis-chat-draft') || '';
+    if (draft) sessionStorage.removeItem('eddy-jarvis-chat-draft');
+    return draft;
+  });
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const abortRef = useRef<AbortController | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
