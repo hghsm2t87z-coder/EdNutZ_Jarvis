@@ -22,6 +22,7 @@ const sectionCards: Record<WorkspaceId, SectionCard[]> = {
     { title: 'Knowledge', description: 'Build your personal second brain.', icon: Heart },
   ],
   business: [
+    { title: 'Business Command Center', description: 'Track ventures, leads, tasks, next actions, and monthly revenue.', icon: Building2, route: '/business' },
     { title: 'Ideas', description: 'Capture opportunities and evaluate what is worth building.', icon: Lightbulb },
     { title: 'Freight & Logistics', description: 'Brokerage, forwarding, customers, quotes, and operations.', icon: Truck },
     { title: 'AI & Software', description: 'Warehouse SaaS, apps, websites, and AI agents.', icon: Rocket },
