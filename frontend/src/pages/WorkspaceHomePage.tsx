@@ -78,8 +78,11 @@ export function WorkspaceHomePage() {
   const WorkspaceIcon = workspaceIcons[activeWorkspace];
   const cards = sectionCards[activeWorkspace];
 
-  const startChat = () => {
+  const startChat = (starter?: string) => {
     createConversation(selectedModel);
+    if (starter) {
+      sessionStorage.setItem('eddy-jarvis-chat-draft', starter);
+    }
     navigate('/');
   };
 
@@ -114,7 +117,7 @@ export function WorkspaceHomePage() {
             </div>
 
             <button
-              onClick={startChat}
+              onClick={() => startChat()}
               className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium"
               style={{
                 background: 'var(--color-accent)',
@@ -180,7 +183,11 @@ export function WorkspaceHomePage() {
             return (
               <button
                 key={card.title}
-                onClick={startChat}
+                onClick={() =>
+                  startChat(
+                    `Help me work on ${card.title} inside my ${workspace.name} workspace.`,
+                  )
+                }
                 className="group min-h-32 rounded-xl p-4 text-left transition-transform active:scale-[0.99]"
                 style={{
                   background: 'var(--color-bg-secondary)',
