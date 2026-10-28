@@ -11,6 +11,7 @@ import { AgentsPage } from './pages/AgentsPage';
 import { DataSourcesPage } from './pages/DataSourcesPage';
 import { LogsPage } from './pages/LogsPage';
 import { GymProgramPage } from './pages/GymProgramPage';
+import { BusinessCommandCenterPage } from './pages/BusinessCommandCenterPage';
 import { CommandPalette } from './components/CommandPalette';
 import { SetupScreen } from './components/SetupScreen';
 import { Toaster } from './components/ui/sonner';
@@ -145,6 +146,7 @@ export default function App() {
           <Route path="workspace" element={<WorkspaceHomePage />} />
           <Route path="records" element={<WorkspaceRecordsPage />} />
           <Route path="gym" element={<GymProgramPage />} />
+          <Route path="business" element={<BusinessCommandCenterPage />} />
           <Route path="dashboard" element={<DashboardPage />} />
           <Route path="settings" element={<SettingsPage />} />
           <Route path="get-started" element={<GetStartedPage />} />
